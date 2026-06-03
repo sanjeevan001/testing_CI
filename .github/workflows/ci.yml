@@ -1,0 +1,41 @@
+name: MERN CI
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm install
+
+      - name: Wait for MongoDB
+        run: |
+          until nc -z localhost 27017; do
+            echo "Waiting for MongoDB to be ready..."
+            sleep 1
+          done
+          echo "MongoDB is ready!"
+
+      - name: Seed MongoDB
+        working-directory: ./backend
+        env:
+          MONGO_URI: mongodb://localhost:27017/todo-db
+        run: npm run seed
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test
