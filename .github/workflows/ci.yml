@@ -13,22 +13,26 @@ jobs:
         image: mongo
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm install
-
-      - name: Wait for MongoDB
-        run: |
-          until timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/27017"; do
-            echo "Waiting for MongoDB to be ready..."
-            sleep 1
-          done
-          echo "MongoDB is ready!"
+        run: npm ci
 
       - name: Seed MongoDB
         working-directory: ./backend
